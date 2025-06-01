@@ -1,0 +1,82 @@
+#!/bin/bash
+
+set -euo pipefail
+
+usage() {
+  echo "Usage: $0 [-u user] [-p password] [-h host]"
+  exit 1
+}
+
+validate_host() {
+  local host="$1"
+
+  if ! [[ "$host" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] &&
+    ! [[ "$host" =~ ^([a-zA-Z0-9_-]+\.)+[a-zA-Z]{2,}$ ]]; then
+    echo "Error: not valid host ($host)" >&2
+    return 1
+  fi
+
+  if ! timeout 3 bash -c "cat < /dev/null > /dev/tcp/$host/3389" 2>/dev/null; then
+    echo "Warning! Host - $host is not reachable on port 3389" >&2
+    read -rp "Continue connecting? (y/N) " -n 1 confirm
+    echo
+    [[ "$confirm" =~ ^[yY]$ ]] || return 1
+  fi
+
+  return 0
+}
+
+cleanup() {
+  password=""
+  unset password
+  user=""
+  unset user
+}
+
+main() {
+  trap cleanup EXIT SIGINT SIGTERM
+
+  while getopts ":u:p:h" opt; do
+    case $opt in
+    u) user="$OPTARG" ;;
+    p) password="$OPTARG" ;;
+    h) host="$OPTARG" ;;
+    *) usage ;;
+    esac
+  done
+
+  if [[ -z "${user:-}" ]]; then
+    read -rp "User > " user
+  fi
+
+  if [[ -z "${password:-}" ]]; then
+    read -rsp "Password > " password
+    echo
+  fi
+
+  # If u wont use default ip uncoment
+  # host="${host:-workIp}"
+  if [[ -z "${host:-}" ]]; then
+    read -rp "Host > " host
+
+    if ! validate_host "$host"; then
+      echo -e "Error validate host\n"
+      exit 1
+    fi
+
+    echo
+  fi
+
+  echo -e "Starting connecting ...\n"
+
+  xfreerdp \
+    /u:"$user" \
+    /p:"$password" \
+    /sound:sys:pulse,format:1,quality:high \
+    /microphone:format:1,quality:high \
+    /multimon \
+    /gfx:avc444 +gfx-progressive +gfx-small-cache \
+    /v:"$host"
+}
+
+main "$@"

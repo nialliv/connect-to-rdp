@@ -52,19 +52,18 @@ main() {
       read -rp "Host > " host
 
       if validate_host "$host"; then
-        echo
         break
       fi
 
       echo -e "Error validate host\n"
 
+      ((attempts == 0)) || {
+        echo "Max attempts reached"
+        return 1
+      }
+
     done
   fi
-
-  ((attempts == 0)) || {
-    echo "Max attempts reached"
-    return 1
-  }
 
   if [[ -z "${user:-}" ]]; then
     read -rp "User > " user

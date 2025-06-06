@@ -57,12 +57,12 @@ main() {
 
       echo -e "Error validate host\n"
 
-      ((attempts == 0)) || {
-        echo "Max attempts reached"
-        return 1
-      }
-
     done
+
+    ((attempts <= 0)) && {
+      echo "Max attempts reached"
+      return 1
+    }
   fi
 
   if [[ -z "${user:-}" ]]; then

@@ -35,7 +35,7 @@ cleanup() {
 main() {
   trap cleanup EXIT SIGINT SIGTERM
 
-  while getopts ":u:p:h" opt; do
+  while getopts ":u:p:h:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
     p) password="$OPTARG" ;;
